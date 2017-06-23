@@ -1,4 +1,4 @@
-﻿<!--
+<!--
 ***********************************************************************************************
 NuGet.targets
 
@@ -469,6 +469,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <RestoreOutputPath Condition=" '$(RestoreOutputPath)' == '' " >$(BaseIntermediateOutputPath)</RestoreOutputPath>
     </PropertyGroup>
 
+    <!-- Projects in VS-->
     <ConvertToAbsolutePath Paths="$(RestoreOutputPath)" Condition=" '$(RestoreProjectStyle)' == 'PackageReference' OR '$(RestoreProjectStyle)' == 'ProjectJson'">
       <Output TaskParameter="AbsolutePaths" PropertyName="RestoreOutputAbsolutePath" />
     </ConvertToAbsolutePath>
@@ -878,24 +879,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_RestoreFallbackFoldersOverride>$(RestoreFallbackFolders)</_RestoreFallbackFoldersOverride>
     </PropertyGroup>
-  </Target>
-
-  <!--
-    ============================================================
-    _CleanRestoreCacheFiles
-    Deletes all the *.nuget.cache files in the obj directory
-    ============================================================
-  -->
-  <Target Name="_CleanRestoreCacheFiles" 
-          AfterTargets="Clean">
-    <PropertyGroup>
-        <CacheFileOutputPath Condition=" '$(RestoreOutputPath)' != '' ">$(RestoreOutputPath)</CacheFileOutputPath>
-        <CacheFileOutputPath Condition=" '$(RestoreOutputPath)' == '' ">$(BaseIntermediateOutputPath)</CacheFileOutputPath>
-    </PropertyGroup>
-    <ItemGroup>
-        <_CacheFilesToDelete Include="$(CacheFileOutputPath)*.nuget.cache" />
-    </ItemGroup>
-    <Delete Files="@(_CacheFilesToDelete)" />
   </Target>
 
 </Project>

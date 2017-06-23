@@ -304,8 +304,10 @@ namespace NuGet.SolutionRestoreManager
             }
         }
 
-        public void CleanCache()
+        public async Task CleanCacheAsync()
         {
+            await SolutionManager.CleanAsync();
+
             Interlocked.Exchange(ref _restoreJobContext, new SolutionRestoreJobContext());
         }
 

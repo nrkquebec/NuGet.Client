@@ -13,8 +13,10 @@ using EnvDTE;
 using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.PackageManagement.Telemetry;
 using NuGet.ProjectManagement;
@@ -982,6 +984,13 @@ namespace NuGet.PackageManagement.VisualStudio
         {
             EnsureInitialize();
             return _projectSystemCache.GetVsProjectAdapters();
+        }
+
+        public async Task CleanAsync()
+        {
+            EnsureInitialize();
+
+            await Task.WhenAll(GetNuGetProjects().OfType<BuildIntegratedNuGetProject>().Select(async e => FileUtility.Delete(await e.GetCacheFilePathAsync())));
         }
 
         public async Task<NuGetProject> UpgradeProjectToPackageReferenceAsync(NuGetProject oldProject)

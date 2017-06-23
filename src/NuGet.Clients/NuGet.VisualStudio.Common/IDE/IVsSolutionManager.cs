@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
@@ -64,6 +64,11 @@ namespace NuGet.PackageManagement.VisualStudio
         /// <param name="project">Existing project to upgrade.</param>
         /// <returns>New project instance.</returns>
         Task<NuGetProject> UpgradeProjectToPackageReferenceAsync(NuGetProject project);
+
+        /// <summary>
+        /// Do NuGet related clean actions on every project
+        /// </summary>
+        Task CleanAsync();
 
         /// <summary>
         /// Return true if all the .net core projects are nominated.

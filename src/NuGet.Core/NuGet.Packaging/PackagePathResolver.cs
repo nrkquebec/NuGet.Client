@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -8,9 +8,6 @@ using NuGet.Packaging.Core;
 
 namespace NuGet.Packaging
 {
-    /// <summary>
-    /// A V2 path resolver.
-    /// </summary>
     public class PackagePathResolver
     {
         private readonly string _rootDirectory;
@@ -48,16 +45,6 @@ namespace NuGet.Packaging
             fileNameBase.Append(PackagingCoreConstants.NupkgExtension);
 
             return fileNameBase.ToString();
-        }
-
-        public string GetPackageDownloadMarkerFileName(PackageIdentity packageIdentity)
-        {
-            var builder = new StringBuilder();
-
-            builder.Append(GetId(packageIdentity));
-            builder.Append(PackagingCoreConstants.PackageDownloadMarkerFileExtension);
-
-            return builder.ToString();
         }
 
         public string GetManifestFileName(PackageIdentity packageIdentity)

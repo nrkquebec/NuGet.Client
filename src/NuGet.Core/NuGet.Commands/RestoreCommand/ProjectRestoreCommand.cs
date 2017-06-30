@@ -234,7 +234,7 @@ namespace NuGet.Commands
             }
         }
 
-        private async Task InstallPackageAsync(RemoteMatch installItem, CancellationToken token)
+        private Task InstallPackageAsync(RemoteMatch installItem, CancellationToken token)
         {
             var packageIdentity = new PackageIdentity(installItem.Library.Name, installItem.Library.Version);
 
@@ -245,17 +245,15 @@ namespace NuGet.Commands
                 _request.PackageSaveMode,
                 _request.XmlDocFileSaveMode);
 
-            using (var packageDependency = await installItem.Provider.GetPackageDownloaderAsync(
-                packageIdentity,
-                _request.CacheContext,
-                _logger,
-                token))
-            {
-                await PackageExtractor.InstallFromSourceAsync(
-                    packageDependency,
-                    versionFolderPathContext,
-                    token);
-            }
+            return PackageExtractor.InstallFromSourceAsync(
+                stream => installItem.Provider.CopyToAsync(
+                    installItem.Library,
+                    stream,
+                    _request.CacheContext,
+                    _logger,
+                    token),
+                versionFolderPathContext,
+                token);
         }
 
         private Task<RestoreTargetGraph[]> WalkRuntimeDependenciesAsync(LibraryRange projectRange,

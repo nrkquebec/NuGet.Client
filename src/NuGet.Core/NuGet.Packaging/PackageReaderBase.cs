@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -22,9 +22,8 @@ namespace NuGet.Packaging
     public abstract class PackageReaderBase : IPackageCoreReader, IPackageContentReader, IAsyncPackageCoreReader, IAsyncPackageContentReader
     {
         private NuspecReader _nuspecReader;
-
-        protected IFrameworkNameProvider FrameworkProvider { get; set; }
-        protected IFrameworkCompatibilityProvider CompatibilityProvider { get; set; }
+        private readonly IFrameworkNameProvider _frameworkProvider;
+        private readonly IFrameworkCompatibilityProvider _compatibilityProvider;
 
         /// <summary>
         /// Instantiates a new <see cref="PackageReaderBase" /> class.
@@ -55,8 +54,8 @@ namespace NuGet.Packaging
                 throw new ArgumentNullException(nameof(compatibilityProvider));
             }
 
-            FrameworkProvider = frameworkProvider;
-            CompatibilityProvider = compatibilityProvider;
+            _frameworkProvider = frameworkProvider;
+            _compatibilityProvider = compatibilityProvider;
         }
 
         #region IPackageCoreReader implementation
@@ -98,9 +97,21 @@ namespace NuGet.Packaging
 
         public virtual string GetNuspecFile()
         {
-            var files = GetFiles();
+            // Find all nuspecs in the root folder.
+            var nuspecPaths = GetFiles()
+                .Where(entryPath => PackageHelper.IsManifest(entryPath))
+                .ToList();
 
-            return GetNuspecFile(files);
+            if (nuspecPaths.Count == 0)
+            {
+                throw new PackagingException(Strings.MissingNuspec);
+            }
+            else if (nuspecPaths.Count > 1)
+            {
+                throw new PackagingException(Strings.MultipleNuspecFiles);
+            }
+
+            return nuspecPaths.Single();
         }
 
         /// <summary>
@@ -123,47 +134,47 @@ namespace NuGet.Packaging
 
         #region IAsyncPackageCoreReader implementation
 
-        public virtual Task<PackageIdentity> GetIdentityAsync(CancellationToken cancellationToken)
+        public Task<PackageIdentity> GetIdentityAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetIdentity());
         }
 
-        public virtual Task<NuGetVersion> GetMinClientVersionAsync(CancellationToken cancellationToken)
+        public Task<NuGetVersion> GetMinClientVersionAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetMinClientVersion());
         }
 
-        public virtual Task<IReadOnlyList<PackageType>> GetPackageTypesAsync(CancellationToken cancellationToken)
+        public Task<IReadOnlyList<PackageType>> GetPackageTypesAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetPackageTypes());
         }
 
-        public virtual Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken)
+        public Task<Stream> GetStreamAsync(string path, CancellationToken cancellationToken)
         {
             return Task.FromResult(GetStream(path));
         }
 
-        public virtual Task<IEnumerable<string>> GetFilesAsync(CancellationToken cancellationToken)
+        public Task<IEnumerable<string>> GetFilesAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetFiles());
         }
 
-        public virtual Task<IEnumerable<string>> GetFilesAsync(string folder, CancellationToken cancellationToken)
+        public Task<IEnumerable<string>> GetFilesAsync(string folder, CancellationToken cancellationToken)
         {
             return Task.FromResult(GetFiles(folder));
         }
 
-        public virtual Task<Stream> GetNuspecAsync(CancellationToken cancellationToken)
+        public Task<Stream> GetNuspecAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetNuspec());
         }
 
-        public virtual Task<string> GetNuspecFileAsync(CancellationToken cancellationToken)
+        public Task<string> GetNuspecFileAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(GetNuspecFile());
         }
 
-        public virtual Task<IEnumerable<string>> CopyFilesAsync(
+        public Task<IEnumerable<string>> CopyFilesAsync(
             string destination,
             IEnumerable<string> packageFiles,
             ExtractPackageFileDelegate extractFile,
@@ -188,6 +199,26 @@ namespace NuGet.Packaging
         #endregion
 
         #region IPackageContentReader implementation
+
+        /// <summary>
+        /// Frameworks mentioned in the package.
+        /// </summary>
+        public virtual IEnumerable<NuGetFramework> GetSupportedFrameworks()
+        {
+            var frameworks = new HashSet<NuGetFramework>(new NuGetFrameworkFullComparer());
+
+            frameworks.UnionWith(GetLibItems().Select(g => g.TargetFramework));
+
+            frameworks.UnionWith(GetBuildItems().Select(g => g.TargetFramework));
+
+            frameworks.UnionWith(GetContentItems().Select(g => g.TargetFramework));
+
+            frameworks.UnionWith(GetToolItems().Select(g => g.TargetFramework));
+
+            frameworks.UnionWith(GetFrameworkItems().Select(g => g.TargetFramework));
+
+            return frameworks.Where(f => !f.IsUnsupported).OrderBy(f => f, new NuGetFrameworkSorter());
+        }
 
         public virtual IEnumerable<FrameworkSpecificGroup> GetFrameworkItems()
         {
@@ -270,8 +301,8 @@ namespace NuGet.Packaging
                     var referenceGroup = NuGetFrameworkUtility.GetNearest(
                         items: referenceGroups,
                         framework: fileGroup.TargetFramework,
-                        frameworkMappings: FrameworkProvider,
-                        compatibilityProvider: CompatibilityProvider);
+                        frameworkMappings: _frameworkProvider,
+                        compatibilityProvider: _compatibilityProvider);
 
                     if (referenceGroup == null)
                     {
@@ -354,31 +385,6 @@ namespace NuGet.Packaging
 
         #endregion
 
-        /// <summary>
-        /// Frameworks mentioned in the package.
-        /// </summary>
-        public virtual IEnumerable<NuGetFramework> GetSupportedFrameworks()
-        {
-            var frameworks = new HashSet<NuGetFramework>(new NuGetFrameworkFullComparer());
-
-            frameworks.UnionWith(GetLibItems().Select(g => g.TargetFramework));
-
-            frameworks.UnionWith(GetBuildItems().Select(g => g.TargetFramework));
-
-            frameworks.UnionWith(GetContentItems().Select(g => g.TargetFramework));
-
-            frameworks.UnionWith(GetToolItems().Select(g => g.TargetFramework));
-
-            frameworks.UnionWith(GetFrameworkItems().Select(g => g.TargetFramework));
-
-            return frameworks.Where(f => !f.IsUnsupported).OrderBy(f => f, new NuGetFrameworkSorter());
-        }
-
-        public virtual Task<IEnumerable<NuGetFramework>> GetSupportedFrameworksAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(GetSupportedFrameworks());
-        }
-
         public virtual bool IsServiceable()
         {
             return NuspecReader.IsServiceable();
@@ -436,7 +442,7 @@ namespace NuGet.Packaging
             }
         }
 
-        protected NuGetFramework GetFrameworkFromPath(string path, bool allowSubFolders = false)
+        private NuGetFramework GetFrameworkFromPath(string path, bool allowSubFolders = false)
         {
             var framework = NuGetFramework.AnyFramework;
 
@@ -451,7 +457,7 @@ namespace NuGet.Packaging
                 NuGetFramework parsedFramework;
                 try
                 {
-                    parsedFramework = NuGetFramework.ParseFolder(folderName, FrameworkProvider);
+                    parsedFramework = NuGetFramework.ParseFolder(folderName, _frameworkProvider);
                 }
                 catch (ArgumentException e)
                 {
@@ -478,7 +484,7 @@ namespace NuGet.Packaging
         /// <summary>
         /// only packageId.targets and packageId.props should be used from the build folder
         /// </summary>
-        protected static bool IsAllowedBuildFile(string packageId, string path)
+        private static bool IsAllowedBuildFile(string packageId, string path)
         {
             var file = Path.GetFileName(path);
 
@@ -489,7 +495,7 @@ namespace NuGet.Packaging
         /// <summary>
         /// True only for assemblies that should be added as references to msbuild projects
         /// </summary>
-        protected static bool IsReferenceAssembly(string path)
+        private static bool IsReferenceAssembly(string path)
         {
             var result = false;
 
@@ -512,35 +518,6 @@ namespace NuGet.Packaging
             }
 
             return result;
-        }
-
-        protected static string GetNuspecFile(IEnumerable<string> files)
-        {
-            // Find all nuspecs in the root folder.
-            var nuspecPaths = files
-                .Where(entryPath => PackageHelper.IsManifest(entryPath))
-                .ToList();
-
-            if (nuspecPaths.Count == 0)
-            {
-                throw new PackagingException(Strings.MissingNuspec);
-            }
-            else if (nuspecPaths.Count > 1)
-            {
-                throw new PackagingException(Strings.MultipleNuspecFiles);
-            }
-
-            return nuspecPaths.Single();
-        }
-
-        public virtual Task<NuspecReader> GetNuspecReaderAsync(CancellationToken cancellationToken)
-        {
-            return Task.FromResult(NuspecReader);
-        }
-
-        public virtual Task<string> CopyNupkgAsync(string nupkgFilePath, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
     }
 }

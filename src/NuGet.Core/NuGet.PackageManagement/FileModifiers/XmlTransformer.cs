@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using NuGet.Common;
@@ -8,177 +8,79 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Xml.Linq;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace NuGet.ProjectManagement
 {
-    /// <summary>
-    /// An XML project file transformer.
-    /// </summary>
     public class XmlTransformer : IPackageFileTransformer
     {
         private readonly IDictionary<XName, Action<XElement, XElement>> _nodeActions;
 
-        /// <summary>
-        /// Initializes a new <see cref="XmlTransformer" /> class.
-        /// </summary>
-        /// <param name="nodeActions">A dictionary of XML node names to node actions.</param>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="nodeActions" />
-        /// is <c>null</c>.</exception>
         public XmlTransformer(IDictionary<XName, Action<XElement, XElement>> nodeActions)
         {
-            if (nodeActions == null)
-            {
-                throw new ArgumentNullException(nameof(nodeActions));
-            }
-
             _nodeActions = nodeActions;
         }
 
-        /// <summary>
-        /// Asynchronously transforms a file.
-        /// </summary>
-        /// <param name="streamTaskFactory">A stream task factory.</param>
-        /// <param name="targetPath">A path to the file to be transformed.</param>
-        /// <param name="projectSystem">The project where this change is taking place.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
-        /// <returns>A task that represents the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="streamTaskFactory" />
-        /// is <c>null</c>.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="projectSystem" />
-        /// is <c>null</c>.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken" />
-        /// is cancelled.</exception>
-        public async Task TransformFileAsync(
-            Func<Task<Stream>> streamTaskFactory,
-            string targetPath,
-            IMSBuildProjectSystem projectSystem,
-            CancellationToken cancellationToken)
+        public void TransformFile(Func<Stream> fileStreamFactory, string targetPath, IMSBuildProjectSystem msBuildNuGetProjectSystem)
         {
-            if (streamTaskFactory == null)
-            {
-                throw new ArgumentNullException(nameof(streamTaskFactory));
-            }
-
-            if (projectSystem == null)
-            {
-                throw new ArgumentNullException(nameof(projectSystem));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
             // Get the xml fragment
-            var xmlFragment = await GetXmlAsync(streamTaskFactory, projectSystem, cancellationToken);
+            var xmlFragment = GetXml(fileStreamFactory, msBuildNuGetProjectSystem);
 
-            var transformDocument = XmlUtility.GetOrCreateDocument(xmlFragment.Name, targetPath, projectSystem);
+            var transformDocument = XmlUtility.GetOrCreateDocument(xmlFragment.Name, targetPath, msBuildNuGetProjectSystem);
 
             // Do a merge
             transformDocument.Root.MergeWith(xmlFragment, _nodeActions);
 
-            MSBuildNuGetProjectSystemUtility.AddFile(projectSystem, targetPath, transformDocument.Save);
+            MSBuildNuGetProjectSystemUtility.AddFile(msBuildNuGetProjectSystem, targetPath, transformDocument.Save);
         }
 
-        /// <summary>
-        /// Asynchronously reverses the transform on the targetPath, using all the potential source of change.
-        /// </summary>
-        /// <param name="streamTaskFactory">A factory for accessing the file to be reverted from the nupkg being uninstalled.</param>
-        /// <param name="targetPath">A path to the file to be reverted.</param>
-        /// <param name="matchingFiles">Other files in other packages that may have changed the <paramref name="targetPath" />.</param>
-        /// <param name="projectSystem">The project where this change is taking place.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
-        /// <returns>A task that represents the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="streamTaskFactory" />
-        /// is <c>null</c>.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="projectSystem" />
-        /// is <c>null</c>.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken" />
-        /// is cancelled.</exception>
-        public async Task RevertFileAsync(
-            Func<Task<Stream>> streamTaskFactory,
+        public void RevertFile(Func<Stream> fileStreamFactory,
             string targetPath,
             IEnumerable<InternalZipFileInfo> matchingFiles,
-            IMSBuildProjectSystem projectSystem,
-            CancellationToken cancellationToken)
+            IMSBuildProjectSystem msBuildNuGetProjectSystem)
         {
-            if (streamTaskFactory == null)
-            {
-                throw new ArgumentNullException(nameof(streamTaskFactory));
-            }
-
-            if (projectSystem == null)
-            {
-                throw new ArgumentNullException(nameof(projectSystem));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
             // Get the xml snippet
-            var xmlFragment = await GetXmlAsync(streamTaskFactory, projectSystem, cancellationToken);
+            var xmlFragment = GetXml(fileStreamFactory, msBuildNuGetProjectSystem);
 
             var document = XmlUtility.GetOrCreateDocument(xmlFragment.Name,
-                projectSystem.ProjectFullPath,
+                msBuildNuGetProjectSystem.ProjectFullPath,
                 targetPath,
-                projectSystem.NuGetProjectContext);
+                msBuildNuGetProjectSystem.NuGetProjectContext);
 
             // Merge the other xml elements into one element within this xml hierarchy (matching the config file path)
-            var elements = new List<XElement>();
-
-            foreach (var matchingFile in matchingFiles)
-            {
-                elements.Add(await GetXmlAsync(matchingFile, projectSystem, cancellationToken));
-            }
-
-            var mergedFragments = elements.Aggregate(
-                new XElement(xmlFragment.Name),
-                (left, right) => left.MergeWith(right, _nodeActions));
+            var mergedFragments = matchingFiles.Select(f => GetXml(f, msBuildNuGetProjectSystem))
+                .Aggregate(new XElement(xmlFragment.Name), (left, right) => left.MergeWith(right, _nodeActions));
 
             // Take the difference of the xml and remove it from the main xml file
             document.Root.Except(xmlFragment.Except(mergedFragments));
 
             // Save the new content to the file system
-            using (var fileStream = FileSystemUtility.CreateFile(
-                projectSystem.ProjectFullPath,
-                targetPath,
-                projectSystem.NuGetProjectContext))
+            using (var fileStream = FileSystemUtility.CreateFile(msBuildNuGetProjectSystem.ProjectFullPath,
+                targetPath, msBuildNuGetProjectSystem.NuGetProjectContext))
             {
                 document.Save(fileStream);
             }
         }
 
-        private static async Task<XElement> GetXmlAsync(
-            InternalZipFileInfo packageFileInfo,
-            IMSBuildProjectSystem projectSystem,
-            CancellationToken cancellationToken)
+        private static XElement GetXml(InternalZipFileInfo packageFileInfo, IMSBuildProjectSystem msBuildNuGetProjectSystem)
         {
             string content;
-
             using (var packageStream = File.OpenRead(packageFileInfo.ZipArchivePath))
             {
                 var zipArchive = new ZipArchive(packageStream);
                 var zipArchivePackageEntry = PathUtility.GetEntry(zipArchive, packageFileInfo.ZipArchiveEntryFullName);
-
                 if (zipArchivePackageEntry == null)
                 {
                     throw new ArgumentException("internalZipFileInfo");
                 }
 
-                content = await Preprocessor.ProcessAsync(
-                    () => Task.FromResult(zipArchivePackageEntry.Open()),
-                    projectSystem,
-                    cancellationToken);
+                content = Preprocessor.Process(zipArchivePackageEntry.Open, msBuildNuGetProjectSystem);
             }
-
             return XElement.Parse(content, LoadOptions.PreserveWhitespace);
         }
 
-        private static async Task<XElement> GetXmlAsync(
-            Func<Task<Stream>> streamTaskFactory,
-            IMSBuildProjectSystem projectSystem,
-            CancellationToken cancellationToken)
+        private static XElement GetXml(Func<Stream> fileStreamFactory, IMSBuildProjectSystem msBuildNuGetProjectSystem)
         {
-            var content = await Preprocessor.ProcessAsync(streamTaskFactory, projectSystem, cancellationToken);
-
+            var content = Preprocessor.Process(fileStreamFactory, msBuildNuGetProjectSystem);
             return XElement.Parse(content, LoadOptions.PreserveWhitespace);
         }
     }

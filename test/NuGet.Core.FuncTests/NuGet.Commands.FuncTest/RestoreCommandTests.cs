@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -440,15 +440,10 @@ namespace NuGet.Commands.FuncTest
                 SimpleTestPackageUtility.CreatePackages(workingDir, packageContext);
 
                 // install the package
-                var packageIdentity = new PackageIdentity("packageA", NuGetVersion.Parse("1.0.0"));
-
-                using (var packageDownloader = new LocalPackageArchiveDownloader(
-                    packagePath,
-                    packageIdentity,
-                    logger))
+                using (var fileStream = File.OpenRead(packagePath))
                 {
-                    await PackageExtractor.InstallFromSourceAsync(
-                        packageDownloader,
+                    await PackageExtractor.InstallFromSourceAsync((stream) =>
+                        fileStream.CopyToAsync(stream, 4096, CancellationToken.None),
                         new VersionFolderPathContext(
                             new PackageIdentity("packageA", NuGetVersion.Parse("1.0.0")),
                             packagesDir,

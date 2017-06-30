@@ -38,7 +38,7 @@ namespace NuGet.Protocol.Plugins
         /// <summary>
         /// Occurs when a plugin or plugin connection has faulted.
         /// </summary>
-        public event EventHandler<FaultedPluginEventArgs> Faulted;
+        public event EventHandler<PluginEventArgs> Faulted;
 
         /// <summary>
         /// Occurs when a plugin has been idle for the configured idle timeout period.
@@ -210,7 +210,7 @@ namespace NuGet.Protocol.Plugins
 
         private void OnFaulted(object sender, ProtocolErrorEventArgs e)
         {
-            Faulted?.Invoke(this, new FaultedPluginEventArgs(this, e.Exception));
+            Faulted?.Invoke(this, new PluginEventArgs(this));
         }
 
         private void OnIdleTimer(object state)

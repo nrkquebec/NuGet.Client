@@ -851,16 +851,17 @@ namespace NuGet.Protocol.Plugins.Tests
             using (var dispatcher = new MessageDispatcher(new RequestHandlers(), _idGenerator))
             using (var handlingEvent = new ManualResetEventSlim(initialState: false))
             using (var respondingEvent = new ManualResetEventSlim(initialState: false))
-            using (var cancelEvent = new ManualResetEventSlim(initialState: false))
             using (var sentEvent = new ManualResetEventSlim(initialState: false))
             {
+                CancellationToken actualCancellationToken;
+
                 var requestHandler = new RequestHandler()
                 {
                     HandleResponseAsyncFunc = (conn, message, responseHandler, cancellationToken) =>
                     {
-                        cancellationToken.Register(() => cancelEvent.Set());
-
                         handlingEvent.Set();
+
+                        actualCancellationToken = cancellationToken;
 
                         respondingEvent.Wait(cancellationToken);
 
@@ -909,9 +910,12 @@ namespace NuGet.Protocol.Plugins.Tests
                     MessageType.Cancel,
                     MessageMethod.PrefetchPackage);
 
+                Assert.False(actualCancellationToken.IsCancellationRequested);
+
                 connection.Raise(x => x.MessageReceived += null, new MessageEventArgs(cancellationRequest));
 
-                cancelEvent.Wait();
+                Assert.True(actualCancellationToken.IsCancellationRequested);
+
                 sentEvent.Wait();
 
                 connection.Verify();

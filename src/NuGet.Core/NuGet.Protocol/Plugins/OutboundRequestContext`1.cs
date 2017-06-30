@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +17,6 @@ namespace NuGet.Protocol.Plugins
         private readonly CancellationToken _cancellationToken;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly IConnection _connection;
-        private int _isCancellationRequested; // int for Interlocked.CompareExchange(...).  0 == false, 1 == true.
         private bool _isClosed;
         private bool _isDisposed;
         private bool _isKeepAlive;
@@ -82,7 +80,7 @@ namespace NuGet.Protocol.Plugins
 
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            _cancellationTokenSource.Token.Register(TryCancel);
+            _cancellationTokenSource.Token.Register(Close);
 
             // Capture the cancellation token now because if the cancellation token source
             // is disposed race conditions may cause an exception acccessing its Token property.
@@ -90,19 +88,10 @@ namespace NuGet.Protocol.Plugins
         }
 
         /// <summary>
-        /// Handles a cancellation response for the outbound request.
+        /// Handles cancellation for the outbound request.
         /// </summary>
-        public override void HandleCancelResponse()
+        public override void HandleCancel()
         {
-            if (Interlocked.CompareExchange(ref _isCancellationRequested, value: 0, comparand: 0) == 0)
-            {
-                throw new ProtocolException(
-                    string.Format(
-                        CultureInfo.CurrentCulture,
-                        Strings.Plugin_InvalidMessageType,
-                        MessageType.Cancel));
-            }
-
             _taskCompletionSource.TrySetCanceled();
         }
 
@@ -207,28 +196,7 @@ namespace NuGet.Protocol.Plugins
         {
             Debug.WriteLine($"Request {_request.RequestId} timed out.");
 
-            TryCancel();
-        }
-
-        private void TryCancel()
-        {
-            if (_taskCompletionSource.TrySetCanceled())
-            {
-                if (Interlocked.CompareExchange(ref _isCancellationRequested, value: 1, comparand: 0) == 0)
-                {
-                    Task.Run(async () =>
-                    {
-                        // Top-level exception handler for a worker pool thread.
-                        try
-                        {
-                            await _connection.MessageDispatcher.DispatchCancelAsync(_request, CancellationToken.None);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                    });
-                }
-            }
+            _taskCompletionSource.TrySetCanceled();
         }
     }
 }

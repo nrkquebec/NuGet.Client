@@ -617,6 +617,15 @@ namespace NuGet.Protocol.Plugins.Tests
                 _payload = payload;
             }
 
+            public Task HandleCancelAsync(
+                IConnection connection,
+                Message request,
+                IResponseHandler responseHandler,
+                CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+
             public Task HandleResponseAsync(
                 IConnection connection,
                 Message request,

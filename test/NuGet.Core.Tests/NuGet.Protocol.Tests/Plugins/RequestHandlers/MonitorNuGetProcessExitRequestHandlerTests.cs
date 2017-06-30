@@ -45,6 +45,19 @@ namespace NuGet.Protocol.Plugins.Tests
         }
 
         [Fact]
+        public async Task HandleCancelAsync_Throws()
+        {
+            var request = CreateRequest(MessageType.Cancel);
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => _handler.HandleCancelAsync(
+                    Mock.Of<IConnection>(),
+                    request,
+                    Mock.Of<IResponseHandler>(),
+                    CancellationToken.None));
+        }
+
+        [Fact]
         public async Task HandleResponseAsync_ThrowsForNullConnection()
         {
             var request = CreateRequest(MessageType.Request);

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -213,7 +214,7 @@ namespace NuGet.Protocol.Tests
                 SimpleTestPackageUtility.CreateFolderFeedV2(rootV2, package);
                 await SimpleTestPackageUtility.CreateFolderFeedV3(rootV3, package);
                 SimpleTestPackageUtility.CreateFolderFeedUnzip(rootUnzip, package);
-                await SimpleTestPackageUtility.CreateFolderFeedPackagesConfigAsync(rootPackagesConfig, package);
+                SimpleTestPackageUtility.CreateFolderFeedPackagesConfig(rootPackagesConfig, package);
             }
         }
     }

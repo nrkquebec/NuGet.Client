@@ -28,6 +28,7 @@ namespace NuGet.PackageManagement.VisualStudio
         private readonly Lazy<EnvDTE.Project> _dteProject;
         private readonly IDeferredProjectWorkspaceService _workspaceService;
         private readonly IVsProjectThreadingService _threadingService;
+        private readonly string _projectTypeGuid;
 
         #endregion Private members
 
@@ -148,7 +149,7 @@ namespace NuGet.PackageManagement.VisualStudio
                     return EnvDTEProjectUtility.IsSupported(Project);
                 }
 
-                return true;
+                return VsHierarchyUtility.IsSupported(VsHierarchy, _projectTypeGuid);
             }
         }
 
@@ -198,7 +199,19 @@ namespace NuGet.PackageManagement.VisualStudio
                 }
                 else
                 {
-                    return VsHierarchyUtility.GetProjectTypeGuids(VsHierarchy);
+                    var projectTypeGuids = BuildProperties.GetPropertyValue(ProjectBuildProperties.ProjectTypeGuids);
+
+                    if (!string.IsNullOrEmpty(projectTypeGuids))
+                    {
+                        return projectTypeGuids.Split(';');
+                    }
+
+                    if (!string.IsNullOrEmpty(_projectTypeGuid))
+                    {
+                        return new string[] { _projectTypeGuid };
+                    }
+
+                    return new string[0];
                 }
             }
         }
@@ -247,6 +260,7 @@ namespace NuGet.PackageManagement.VisualStudio
             VsHierarchyItem vsHierarchyItem,
             ProjectNames projectNames,
             string fullProjectPath,
+            string projectTypeGuid,
             Func<IVsHierarchy, EnvDTE.Project> loadDteProject,
             IProjectBuildProperties buildProperties,
             IVsProjectThreadingService threadingService,
@@ -258,6 +272,7 @@ namespace NuGet.PackageManagement.VisualStudio
             _dteProject = new Lazy<EnvDTE.Project>(() => loadDteProject(_vsHierarchyItem.VsHierarchy));
             _workspaceService = workspaceService;
             _threadingService = threadingService;
+            _projectTypeGuid = projectTypeGuid;
 
             FullProjectPath = fullProjectPath;
             ProjectNames = projectNames;

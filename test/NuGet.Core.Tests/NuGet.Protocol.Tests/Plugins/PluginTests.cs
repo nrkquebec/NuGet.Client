@@ -288,9 +288,9 @@ namespace NuGet.Protocol.Plugins.Tests
                 isOwnProcess: false,
                 idleTimeout: Timeout.InfiniteTimeSpan))
             {
-                FaultedPluginEventArgs args = null;
+                PluginEventArgs args = null;
 
-                plugin.Faulted += (object sender, FaultedPluginEventArgs e) =>
+                plugin.Faulted += (object sender, PluginEventArgs e) =>
                 {
                     args = e;
 
@@ -305,7 +305,6 @@ namespace NuGet.Protocol.Plugins.Tests
 
                 Assert.NotNull(args);
                 Assert.Same(plugin, args.Plugin);
-                Assert.Same(protocolErrorArgs.Exception, args.Exception);
             }
         }
 

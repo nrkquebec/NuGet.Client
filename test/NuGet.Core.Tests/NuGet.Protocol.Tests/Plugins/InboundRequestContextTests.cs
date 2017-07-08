@@ -67,47 +67,90 @@ namespace NuGet.Protocol.Plugins.Tests
         }
 
         [Fact]
-        public void Cancel_SendsCancelResponse()
+        public void BeginCancelAsync_ThrowsForNullRequest()
+        {
+            using (var test = new InboundRequestContextTest())
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => test.Context.BeginCancelAsync(
+                        request: null,
+                        requestHandler: Mock.Of<IRequestHandler>(),
+                        responseHandler: Mock.Of<IResponseHandler>()));
+
+                Assert.Equal("request", exception.ParamName);
+            }
+        }
+
+        [Fact]
+        public void BeginCancelAsync_ThrowsForNullRequestHandler()
+        {
+            using (var test = new InboundRequestContextTest())
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => test.Context.BeginCancelAsync(
+                        new Message(
+                            test.RequestId,
+                            MessageType.Request,
+                            MessageMethod.GetOperationClaims,
+                            payload: null),
+                        requestHandler: null,
+                        responseHandler: Mock.Of<IResponseHandler>()));
+
+                Assert.Equal("requestHandler", exception.ParamName);
+            }
+        }
+
+        [Fact]
+        public void BeginCancelAsync_ThrowsForNullResponseHandler()
+        {
+            using (var test = new InboundRequestContextTest())
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => test.Context.BeginCancelAsync(
+                        new Message(
+                            test.RequestId,
+                            type: MessageType.Request,
+                            method: MessageMethod.GetOperationClaims,
+                            payload: null),
+                        requestHandler: Mock.Of<IRequestHandler>(),
+                        responseHandler: null));
+
+                Assert.Equal("responseHandler", exception.ParamName);
+            }
+        }
+
+        [Fact]
+        public void BeginCancelAsync_CallsRequestHandler()
         {
             using (var test = new InboundRequestContextTest())
             using (var handledEvent = new ManualResetEventSlim(initialState: false))
             {
-                test.Connection.Setup(
-                        x => x.SendAsync(
-                            It.Is<Message>(m => m.Type == MessageType.Cancel),
-                            It.IsAny<CancellationToken>()))
-                    .Returns(Task.FromResult(0));
-
                 var requestHandler = new Mock<IRequestHandler>(MockBehavior.Strict);
 
-                requestHandler.Setup(x => x.HandleResponseAsync(
+                requestHandler.Setup(x => x.HandleCancelAsync(
                         It.IsNotNull<IConnection>(),
                         It.IsNotNull<Message>(),
                         It.IsNotNull<IResponseHandler>(),
                         It.IsAny<CancellationToken>()))
                     .Callback<IConnection, Message, IResponseHandler, CancellationToken>(
-                        (connection, requestMessage, responseHandler, cancellationToken) =>
+                        (connection, message, responseHandler, cancellationToken) =>
                         {
                             handledEvent.Set();
                         })
                     .Returns(Task.FromResult(0));
 
-                var request = MessageUtilities.Create(
-                    test.RequestId,
-                    MessageType.Cancel,
-                    MessageMethod.PrefetchPackage,
-                    new PrefetchPackageRequest(
-                        packageSourceRepository: "a",
-                        packageId: "b",
-                        packageVersion: "c"));
-
-                test.Context.BeginResponseAsync(request, requestHandler.Object, Mock.Of<IResponseHandler>());
+                test.Context.BeginCancelAsync(
+                    new Message(
+                        test.RequestId,
+                        MessageType.Request,
+                        MessageMethod.GetOperationClaims,
+                        payload: null),
+                    requestHandler.Object,
+                    Mock.Of<IResponseHandler>());
 
                 handledEvent.Wait();
 
-                test.Context.Cancel();
-
-                requestHandler.Verify(x => x.HandleResponseAsync(
+                requestHandler.Verify(x => x.HandleCancelAsync(
                     It.IsNotNull<IConnection>(),
                     It.IsNotNull<Message>(),
                     It.IsNotNull<IResponseHandler>(),
@@ -116,12 +159,61 @@ namespace NuGet.Protocol.Plugins.Tests
         }
 
         [Fact]
-        public void Cancel_IsIdempotent()
+        public void BeginCancelAsync_TranslatesRequestHandlerExceptionIntoFaultResponse()
         {
             using (var test = new InboundRequestContextTest())
+            using (var sentEvent = new ManualResetEventSlim(initialState: false))
             {
-                test.Context.Cancel();
-                test.Context.Cancel();
+                var requestHandler = new Mock<IRequestHandler>(MockBehavior.Strict);
+
+                requestHandler.Setup(x => x.HandleCancelAsync(
+                        It.IsNotNull<IConnection>(),
+                        It.IsNotNull<Message>(),
+                        It.IsNotNull<IResponseHandler>(),
+                        It.IsAny<CancellationToken>()))
+                    .Throws(new Exception("test"));
+
+                Message response = null;
+
+                test.Connection.Setup(x => x.SendAsync(It.IsNotNull<Message>(), It.IsAny<CancellationToken>()))
+                    .Callback<Message, CancellationToken>(
+                        (message, cancellationToken) =>
+                        {
+                            response = message;
+
+                            sentEvent.Set();
+                        })
+                    .Returns(Task.FromResult(0));
+
+                test.Context.BeginCancelAsync(
+                    new Message(
+                        test.RequestId,
+                        MessageType.Request,
+                        MessageMethod.GetOperationClaims,
+                        payload: null),
+                    requestHandler.Object,
+                    Mock.Of<IResponseHandler>());
+
+                sentEvent.Wait();
+
+                requestHandler.Verify(x => x.HandleCancelAsync(
+                    It.IsNotNull<IConnection>(),
+                    It.IsNotNull<Message>(),
+                    It.IsNotNull<IResponseHandler>(),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+                test.Connection.Verify(
+                    x => x.SendAsync(It.IsNotNull<Message>(), It.IsAny<CancellationToken>()),
+                    Times.Once);
+
+                Assert.NotNull(response);
+                Assert.Equal(test.RequestId, response.RequestId);
+                Assert.Equal(MessageType.Fault, response.Type);
+                Assert.Equal(MessageMethod.GetOperationClaims, response.Method);
+
+                var responsePayload = MessageUtilities.DeserializePayload<Fault>(response);
+
+                Assert.Equal("test", responsePayload.Message);
             }
         }
 
@@ -383,8 +475,6 @@ namespace NuGet.Protocol.Plugins.Tests
                 Context.Dispose();
 
                 GC.SuppressFinalize(this);
-
-                Connection.Verify();
             }
         }
     }

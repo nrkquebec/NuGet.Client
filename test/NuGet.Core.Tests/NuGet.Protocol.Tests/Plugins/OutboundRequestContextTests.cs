@@ -65,26 +65,13 @@ namespace NuGet.Protocol.Plugins.Tests
         }
 
         [Fact]
-        public void Constructor_CancelsCompletionTaskAndSendsCancelRequestIfCancelled()
+        public void Constructor_ClosesIfCancelled()
         {
             using (var test = new OutboundRequestContextTest())
-            using (var cancelEvent = new ManualResetEventSlim(initialState: false))
             {
-                test.Connection.Setup(x => x.MessageDispatcher.DispatchCancelAsync(
-                        It.Is<Message>(m => ReferenceEquals(m, test.Request)),
-                        It.IsAny<CancellationToken>()))
-                    .Callback<Message, CancellationToken>(
-                        (message, cancellationToken) =>
-                        {
-                            cancelEvent.Set();
-                        })
-                    .Returns(Task.FromResult(0));
-
                 test.CancellationTokenSource.Cancel();
 
                 Assert.Equal(TaskStatus.Canceled, test.Context.CompletionTask.Status);
-
-                cancelEvent.Wait();
             }
         }
 
@@ -109,11 +96,13 @@ namespace NuGet.Protocol.Plugins.Tests
         }
 
         [Fact]
-        public void HandleCancelResponse_ThrowsIfNotCancelled()
+        public void HandleCancel_CancelsCompletionTask()
         {
             using (var test = new OutboundRequestContextTest())
             {
-                Assert.Throws<ProtocolException>(() => test.Context.HandleCancelResponse());
+                test.Context.HandleCancel();
+
+                Assert.Equal(TaskStatus.Canceled, test.Context.CompletionTask.Status);
             }
         }
 
@@ -261,8 +250,6 @@ namespace NuGet.Protocol.Plugins.Tests
                 Context.Dispose();
 
                 GC.SuppressFinalize(this);
-
-                Connection.Verify();
             }
         }
     }

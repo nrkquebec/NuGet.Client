@@ -16,7 +16,6 @@ namespace NuGet.Protocol
     /// </summary>
     public class ServiceIndexResourceV3 : INuGetResource
     {
-        private readonly string _json;
         private readonly IDictionary<string, List<ServiceIndexEntry>> _index;
         private readonly DateTime _requestTime;
         private static readonly IReadOnlyList<ServiceIndexEntry> _emptyEntries = new List<ServiceIndexEntry>();
@@ -25,7 +24,6 @@ namespace NuGet.Protocol
 
         public ServiceIndexResourceV3(JObject index, DateTime requestTime)
         {
-            _json = index.ToString();
             _index = MakeLookup(index);
             _requestTime = requestTime;
         }
@@ -46,14 +44,6 @@ namespace NuGet.Protocol
             get
             {
                 return _index.SelectMany(e => e.Value).ToList();
-            }
-        }
-
-        public virtual string Json
-        {
-            get
-            {
-                return _json;
             }
         }
 

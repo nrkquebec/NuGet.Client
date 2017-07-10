@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -69,7 +69,7 @@ namespace NuGet.ProjectManagement
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
-        public override async Task<bool> InstallPackageAsync(
+        public override Task<bool> InstallPackageAsync(
             PackageIdentity packageIdentity,
             DownloadResourceResult downloadResourceResult,
             INuGetProjectContext nuGetProjectContext,
@@ -85,13 +85,8 @@ namespace NuGet.ProjectManagement
                 throw new ArgumentNullException("nuGetProjectContext");
             }
 
-            var isDevelopmentDependency = await CheckDevelopmentDependencyAsync(downloadResourceResult, token);
-            var newPackageReference = new PackageReference(
-                packageIdentity,
-                TargetFramework,
-                userInstalled: true,
-                developmentDependency: isDevelopmentDependency,
-                requireReinstallation: false);
+            var isDevelopmentDependency = CheckDevelopmentDependency(downloadResourceResult);
+            var newPackageReference = new PackageReference(packageIdentity, TargetFramework, userInstalled: true, developmentDependency: isDevelopmentDependency, requireReinstallation: false);
             var installedPackagesList = GetInstalledPackagesList();
 
             try
@@ -112,7 +107,7 @@ namespace NuGet.ProjectManagement
                             if (packageReferenceWithSameId.PackageIdentity.Equals(packageIdentity))
                             {
                                 nuGetProjectContext.Log(MessageLevel.Warning, Strings.PackageAlreadyExistsInPackagesConfig, packageIdentity, Path.GetFileName(FullPath));
-                                return false;
+                                return Task.FromResult(false);
                             }
 
                             // Higher version of an installed package is being installed. Remove old and add new
@@ -168,7 +163,7 @@ namespace NuGet.ProjectManagement
             }
 
             nuGetProjectContext.Log(MessageLevel.Info, Strings.AddedPackageToPackagesConfig, packageIdentity, Path.GetFileName(FullPath));
-            return true;
+            return Task.FromResult(true);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
@@ -253,7 +248,7 @@ namespace NuGet.ProjectManagement
                 var share = FileShare.ReadWrite | FileShare.Delete;
 
                 // Try to read the config file up to 3 times
-                for (var i = 0; i < FileUtility.MaxTries; i++)
+                for (int i = 0; i < FileUtility.MaxTries; i++)
                 {
                     try
                     {
@@ -336,11 +331,9 @@ namespace NuGet.ProjectManagement
             return new List<PackageReference>();
         }
 
-        private static async Task<bool> CheckDevelopmentDependencyAsync(
-            DownloadResourceResult downloadResourceResult,
-            CancellationToken token)
+        private static bool CheckDevelopmentDependency(DownloadResourceResult downloadResourceResult)
         {
-            var isDevelopmentDependency = false;
+            bool isDevelopmentDependency = false;
 
             // Catch any exceptions while fetching DevelopmentDependency element from nuspec file.
             // So it can continue to write the packages.config file.
@@ -348,13 +341,11 @@ namespace NuGet.ProjectManagement
             {
                 if (downloadResourceResult.PackageReader != null)
                 {
-                    isDevelopmentDependency = await downloadResourceResult.PackageReader.GetDevelopmentDependencyAsync(token);
+                    isDevelopmentDependency = downloadResourceResult.PackageReader.GetDevelopmentDependency();
                 }
                 else
                 {
-                    using (var packageReader = new PackageArchiveReader(
-                        downloadResourceResult.PackageStream,
-                        leaveStreamOpen: true))
+                    using (var packageReader = new PackageArchiveReader(downloadResourceResult.PackageStream, leaveStreamOpen: true))
                     {
                         var nuspecReader = new NuspecReader(packageReader.GetNuspec());
                         isDevelopmentDependency = nuspecReader.GetDevelopmentDependency();

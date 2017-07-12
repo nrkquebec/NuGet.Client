@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>$id$.Localization</id>
+    <version>$version$</version>
+    <title>$id$.Localization</title>
+    <authors>$authors$</authors>
+    <owners>$owners$</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <licenseUrl>$licenseUrl$</licenseUrl>
+    <projectUrl>$projectUrl$</projectUrl>
+    <iconUrl>$iconUrl$</iconUrl>
+    <description>This package contains the localized satellite assemblies for $id$. Reference this package only if you want localized outputs in cs;de;en;es;fr;it;ja;ko;pl;pt-BR;ru;tr;zh-Hans;zh-Hant.</description>
+    <copyright>$copyright$</copyright>
+    <tags>$tags$</tags>
+  </metadata>
+  <files>
+
+    <!-- MSBuild.dll -->
+    <file src="E:\nuget.client\artifacts\NuGet.Versioning\15.0\bin\Debug\net45\cs\NuGet.Versioning.resources.dll" target="lib\net45\cs\NuGet.Versioning.resources.dll"/>
+
+  </files>
+</package>

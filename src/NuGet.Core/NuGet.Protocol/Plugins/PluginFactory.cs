@@ -284,16 +284,8 @@ namespace NuGet.Protocol.Plugins
             }
         }
 
-        private void OnPluginFaulted(object sender, FaultedPluginEventArgs e)
+        private void OnPluginFaulted(object sender, PluginEventArgs e)
         {
-            var message = string.Format(
-                CultureInfo.CurrentCulture,
-                Strings.Plugin_Fault,
-                e.Plugin.Name,
-                e.Exception.ToString());
-
-            Console.WriteLine(message);
-
             Dispose(e.Plugin);
         }
 

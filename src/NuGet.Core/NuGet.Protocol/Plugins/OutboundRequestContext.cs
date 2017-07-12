@@ -27,9 +27,9 @@ namespace NuGet.Protocol.Plugins
         protected abstract void Dispose(bool disposing);
 
         /// <summary>
-        /// Handles a cancellation response for the outbound request.
+        /// Handles cancellation for the outbound request.
         /// </summary>
-        public abstract void HandleCancelResponse();
+        public abstract void HandleCancel();
 
         /// <summary>
         /// Handles progress notifications for the outbound request.

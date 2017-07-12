@@ -40,7 +40,7 @@ namespace NuGet.Packaging.Test
 
                 var limit = 100;
 
-                for (var i = 0; i < limit; i++)
+                for (int i = 0; i < limit; i++)
                 {
                     var task = Task.Run(async () =>
                     {
@@ -297,7 +297,7 @@ namespace NuGet.Packaging.Test
         }
 
         [Fact]
-        public async Task PackageExtractor_WithContentXmlFile()
+        public void PackageExtractor_WithContentXmlFile()
         {
             // Arrange
             using (var packageStream = TestPackagesCore.GetTestPackageWithContentXmlFile())
@@ -308,7 +308,7 @@ namespace NuGet.Packaging.Test
                 var identity = new PackageIdentity("packageA", new NuGetVersion("2.0.3"));
 
                 // Act
-                var files = await PackageExtractor.ExtractPackageAsync(
+                var files = PackageExtractor.ExtractPackage(
                     packageReader,
                     packageStream,
                     resolver,
@@ -323,7 +323,7 @@ namespace NuGet.Packaging.Test
         }
 
         [Fact]
-        public async Task PackageExtractor_DuplicateNupkg()
+        public void PackageExtractor_DuplicateNupkg()
         {
             using (var packageFile = TestPackagesCore.GetLegacyTestPackage())
             {
@@ -340,7 +340,7 @@ namespace NuGet.Packaging.Test
                     using (var folderReader = new PackageFolderReader(packageFolder))
                     {
                         // Act
-                        var files = await PackageExtractor.ExtractPackageAsync(folderReader,
+                        var files = PackageExtractor.ExtractPackage(folderReader,
                             stream,
                             new PackagePathResolver(root),
                             new PackageExtractionContext(NullLogger.Instance),
@@ -376,7 +376,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -390,7 +390,7 @@ namespace NuGet.Packaging.Test
         }
 
         [Fact]
-        public async Task PackageExtractor_PackageSaveModeNupkg_FolderReader()
+        public void PackageExtractor_PackageSaveModeNupkg_FolderReader()
         {
             // Arrange
             using (var packageFile = TestPackagesCore.GetLegacyTestPackage())
@@ -407,7 +407,7 @@ namespace NuGet.Packaging.Test
                     packageExtractionContext.PackageSaveMode = PackageSaveMode.Nupkg;
 
                     // Act
-                    var files = await PackageExtractor.ExtractPackageAsync(folderReader,
+                    var files = PackageExtractor.ExtractPackage(folderReader,
                                                                          packageStream,
                                                                          new PackagePathResolver(root),
                                                                          packageExtractionContext,
@@ -421,7 +421,7 @@ namespace NuGet.Packaging.Test
         }
 
         [Fact]
-        public async Task PackageExtractor_PackageSaveModeNuspec_FolderReader()
+        public void PackageExtractor_PackageSaveModeNuspec_FolderReader()
         {
             // Arrange
             using (var packageFile = TestPackagesCore.GetLegacyTestPackage())
@@ -438,7 +438,7 @@ namespace NuGet.Packaging.Test
                     packageExtractionContext.PackageSaveMode = PackageSaveMode.Nuspec;
 
                     // Act
-                    var files = await PackageExtractor.ExtractPackageAsync(folderReader,
+                    var files = PackageExtractor.ExtractPackage(folderReader,
                                                                          packageStream,
                                                                          new PackagePathResolver(root),
                                                                          packageExtractionContext,
@@ -452,7 +452,7 @@ namespace NuGet.Packaging.Test
         }
 
         [Fact]
-        public async Task PackageExtractor_PackageSaveModeNuspecAndNupkg_PackageStream()
+        public void PackageExtractor_PackageSaveModeNuspecAndNupkg_PackageStream()
         {
             // Arrange
             using (var packageFile = TestPackagesCore.GetLegacyTestPackage())
@@ -469,7 +469,7 @@ namespace NuGet.Packaging.Test
                     packageExtractionContext.PackageSaveMode = PackageSaveMode.Nuspec | PackageSaveMode.Nupkg;
 
                     // Act
-                    var files = await PackageExtractor.ExtractPackageAsync(folderReader,
+                    var files = PackageExtractor.ExtractPackage(folderReader,
                                                                          packageStream,
                                                                          new PackagePathResolver(root),
                                                                          packageExtractionContext,
@@ -493,6 +493,8 @@ namespace NuGet.Packaging.Test
                 var satelliteIdentity = new PackageIdentity(identity.Id + ".fr", identity.Version);
                 var packageFileInfo = await TestPackagesCore.GetRuntimePackageAsync(root, identity.Id, identity.Version.ToString());
                 var satellitePackageInfo = await TestPackagesCore.GetSatellitePackageAsync(root, identity.Id, identity.Version.ToString(), "fr");
+                
+
 
                 using (var packageStream = File.OpenRead(packageFileInfo.FullName))
                 using (var satellitePackageStream = File.OpenRead(satellitePackageInfo.FullName))
@@ -500,12 +502,12 @@ namespace NuGet.Packaging.Test
                     var packageExtractionContext = new PackageExtractionContext(NullLogger.Instance);
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(packageStream,
+                    var packageFiles = PackageExtractor.ExtractPackage(packageStream,
                                                                      resolver,
                                                                      packageExtractionContext,
                                                                      CancellationToken.None);
 
-                    var satellitePackageFiles = PackageExtractor.ExtractPackageAsync(satellitePackageStream,
+                    var satellitePackageFiles = PackageExtractor.ExtractPackage(satellitePackageStream,
                                                                      resolver,
                                                                      packageExtractionContext,
                                                                      CancellationToken.None);
@@ -546,7 +548,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -586,7 +588,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -638,7 +640,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -680,7 +682,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -723,7 +725,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -777,13 +779,13 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
                         CancellationToken.None);
 
-                    var satellitePackageFiles = PackageExtractor.ExtractPackageAsync(
+                    var satellitePackageFiles = PackageExtractor.ExtractPackage(
                         satellitePackageStream,
                         resolver,
                         packageExtractionContext,
@@ -827,7 +829,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -868,7 +870,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -906,7 +908,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -946,7 +948,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -986,7 +988,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -1026,7 +1028,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -1066,7 +1068,7 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    var packageFiles = PackageExtractor.ExtractPackageAsync(
+                    var packageFiles = PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
@@ -1195,9 +1197,9 @@ namespace NuGet.Packaging.Test
         public async Task PackageExtractor_PreservesZipEntryTime()
         {
             // Arrange
-            using (var root = TestDirectory.Create())
+            using (TestDirectory root = TestDirectory.Create())
             {
-                var time = DateTime.Parse("2014-09-26T01:23:00Z",
+                DateTime time = DateTime.Parse("2014-09-26T01:23:00Z",
                     System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.AdjustToUniversal);
 
@@ -1209,7 +1211,7 @@ namespace NuGet.Packaging.Test
                         identity.Version.ToString(),
                         time.ToLocalTime(), "lib/net45/A.dll");
 
-                using (var packageStream = File.OpenRead(packageFileInfo.FullName))
+                using (FileStream packageStream = File.OpenRead(packageFileInfo.FullName))
                 {
                     var packageExtractionContext = new PackageExtractionContext(NullLogger.Instance)
                     {
@@ -1217,15 +1219,15 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    await PackageExtractor.ExtractPackageAsync(
+                    PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
                         CancellationToken.None);
 
                     var installPath = resolver.GetInstallPath(identity);
-                    var outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
-                    var outputTime = File.GetLastWriteTimeUtc(outputDll);
+                    string outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
+                    DateTime outputTime = File.GetLastWriteTimeUtc(outputDll);
 
                     // Assert
                     Assert.True(File.Exists(outputDll));
@@ -1238,10 +1240,10 @@ namespace NuGet.Packaging.Test
         public async Task PackageExtractor_IgnoresFutureZipEntryTime()
         {
             // Arrange
-            using (var root = TestDirectory.Create())
+            using (TestDirectory root = TestDirectory.Create())
             {
-                var testStartTime = DateTime.UtcNow;
-                var time = DateTime.Parse("2084-09-26T01:23:00Z",
+                DateTime testStartTime = DateTime.UtcNow;
+                DateTime time = DateTime.Parse("2084-09-26T01:23:00Z",
                     System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.AdjustToUniversal);
 
@@ -1253,7 +1255,7 @@ namespace NuGet.Packaging.Test
                         identity.Version.ToString(),
                         time.ToLocalTime(), "lib/net45/A.dll");
 
-                using (var packageStream = File.OpenRead(packageFileInfo.FullName))
+                using (FileStream packageStream = File.OpenRead(packageFileInfo.FullName))
                 {
                     var packageExtractionContext = new PackageExtractionContext(NullLogger.Instance)
                     {
@@ -1261,16 +1263,16 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    await PackageExtractor.ExtractPackageAsync(
+                    PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
                         CancellationToken.None);
 
                     var installPath = resolver.GetInstallPath(identity);
-                    var outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
-                    var outputTime = File.GetLastWriteTimeUtc(outputDll);
-                    var testEndTime = DateTime.UtcNow;
+                    string outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
+                    DateTime outputTime = File.GetLastWriteTimeUtc(outputDll);
+                    DateTime testEndTime = DateTime.UtcNow;
 
                     // Assert
                     Assert.True(File.Exists(outputDll));
@@ -1288,7 +1290,7 @@ namespace NuGet.Packaging.Test
                 return;
             }
             // Arrange
-            using (var root = TestDirectory.Create())
+            using (TestDirectory root = TestDirectory.Create())
             {
                 var resolver = new PackagePathResolver(root);
                 var identity = new PackageIdentity("A", new NuGetVersion("2.0.3"));
@@ -1298,7 +1300,7 @@ namespace NuGet.Packaging.Test
                         identity.Version.ToString(),
                         DateTimeOffset.UtcNow.LocalDateTime, "lib/net45/A.dll");
 
-                using (var packageStream = File.OpenRead(packageFileInfo.FullName))
+                using (FileStream packageStream = File.OpenRead(packageFileInfo.FullName))
                 {
                     var packageExtractionContext = new PackageExtractionContext(NullLogger.Instance)
                     {
@@ -1306,14 +1308,14 @@ namespace NuGet.Packaging.Test
                     };
 
                     // Act
-                    await PackageExtractor.ExtractPackageAsync(
+                    PackageExtractor.ExtractPackage(
                         packageStream,
                         resolver,
                         packageExtractionContext,
                         CancellationToken.None);
 
                     var installPath = resolver.GetInstallPath(identity);
-                    var outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
+                    string outputDll = Path.Combine(installPath, "lib", "net45", "A.dll");
 
                     // Assert
                     Assert.Equal("766", StatPermissions(outputDll));
@@ -1325,7 +1327,7 @@ namespace NuGet.Packaging.Test
         {
             string permissions;
 
-            var startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -1342,7 +1344,7 @@ namespace NuGet.Packaging.Test
                 startInfo.Arguments = "-f %A " + path;
             }
 
-            using (var process = new Process())
+            using (Process process = new Process())
             {
                 process.StartInfo = startInfo;
 
@@ -1353,110 +1355,6 @@ namespace NuGet.Packaging.Test
             }
 
             return permissions;
-        }
-
-        [Fact]
-        public async Task CopySatelliteFilesAsync_ThrowsForNullPackageIdentity()
-        {
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-                () => PackageExtractor.CopySatelliteFilesAsync(
-                    packageIdentity: null,
-                    packagePathResolver: new PackagePathResolver(rootDirectory: "a"),
-                    packageSaveMode: PackageSaveMode.Defaultv3,
-                    packageExtractionContext: new PackageExtractionContext(NullLogger.Instance),
-                    token: CancellationToken.None));
-
-            Assert.Equal("packageIdentity", exception.ParamName);
-        }
-
-        [Fact]
-        public async Task CopySatelliteFilesAsync_ThrowsForNullPackagePathResolver()
-        {
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-                () => PackageExtractor.CopySatelliteFilesAsync(
-                    new PackageIdentity("a", new NuGetVersion(major: 1, minor: 2, patch: 3)),
-                    packagePathResolver: null,
-                    packageSaveMode: PackageSaveMode.Defaultv3,
-                    packageExtractionContext: new PackageExtractionContext(NullLogger.Instance),
-                    token: CancellationToken.None));
-
-            Assert.Equal("packagePathResolver", exception.ParamName);
-        }
-
-        [Fact]
-        public async Task CopySatelliteFilesAsync_ThrowsForNullPackageExtractionContext()
-        {
-            using (var testDirectory = TestDirectory.Create())
-            {
-                var packageIdentity = new PackageIdentity("A", new NuGetVersion("1.2.3"));
-                var packagePathResolver = new PackagePathResolver(testDirectory.Path);
-                var satelliteIdentity = new PackageIdentity(packageIdentity.Id + ".fr", packageIdentity.Version);
-                var satellitePackageInfo = await TestPackagesCore.GetSatellitePackageAsync(
-                    testDirectory.Path,
-                    packageIdentity.Id,
-                    packageIdentity.Version.ToNormalizedString(),
-                    language: "fr");
-
-                var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-                    () => PackageExtractor.CopySatelliteFilesAsync(
-                        satelliteIdentity,
-                        packagePathResolver,
-                        PackageSaveMode.Defaultv3,
-                        packageExtractionContext: null,
-                        token: CancellationToken.None));
-
-                Assert.Equal("packageExtractionContext", exception.ParamName);
-            }
-        }
-
-        [Fact]
-        public async Task CopySatelliteFilesAsync_ReturnsEmptyEnumerableIfSatelliteFileDoesNotExist()
-        {
-            using (var testDirectory = TestDirectory.Create())
-            {
-                var packageIdentity = new PackageIdentity("A", new NuGetVersion("1.2.3"));
-                var packagePathResolver = new PackagePathResolver(testDirectory.Path);
-                var satelliteIdentity = new PackageIdentity(packageIdentity.Id + ".fr", packageIdentity.Version);
-
-                var files = await PackageExtractor.CopySatelliteFilesAsync(
-                    satelliteIdentity,
-                    packagePathResolver,
-                    PackageSaveMode.Defaultv3,
-                    new PackageExtractionContext(NullLogger.Instance),
-                    CancellationToken.None);
-
-                Assert.Empty(files);
-            }
-        }
-
-        [Fact]
-        public async Task CopySatelliteFilesAsync_ReturnsDestinationFilePath()
-        {
-            using (var testDirectory = TestDirectory.Create())
-            {
-                var packageIdentity = new PackageIdentity("A", new NuGetVersion("1.2.3"));
-                var packagePathResolver = new PackagePathResolver(testDirectory.Path);
-                var packageFileInfo = await TestPackagesCore.GetRuntimePackageAsync(
-                    testDirectory.Path,
-                    packageIdentity.Id,
-                    packageIdentity.Version.ToNormalizedString());
-                var satelliteIdentity = new PackageIdentity(packageIdentity.Id + ".fr", packageIdentity.Version);
-                var satellitePackageInfo = await TestPackagesCore.GetSatellitePackageAsync(
-                    testDirectory.Path,
-                    packageIdentity.Id,
-                    packageIdentity.Version.ToNormalizedString(),
-                    language: "fr");
-
-                var files = (await PackageExtractor.CopySatelliteFilesAsync(
-                    satelliteIdentity,
-                    packagePathResolver,
-                    PackageSaveMode.Defaultv3,
-                    new PackageExtractionContext(NullLogger.Instance),
-                    CancellationToken.None)).ToArray();
-
-                Assert.Equal(1, files.Length);
-                Assert.Equal(Path.Combine(testDirectory.Path, "lib", "net45", "fr", "A.resources.dll"), files[0]);
-            }
         }
     }
 }

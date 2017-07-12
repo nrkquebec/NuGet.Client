@@ -378,30 +378,30 @@ namespace NuGet.Test.Utility
         /// <summary>
         /// Create a packagets.config folder of nupkgs
         /// </summary>
-        public static async Task CreateFolderFeedPackagesConfigAsync(string root, params PackageIdentity[] packages)
+        public static void CreateFolderFeedPackagesConfig(string root, params PackageIdentity[] packages)
         {
             var contexts = packages.Select(p => new SimpleTestPackageContext(p)).ToArray();
 
-            await CreateFolderFeedPackagesConfigAsync(root, contexts);
+            CreateFolderFeedPackagesConfig(root, contexts);
         }
 
         /// <summary>
         /// Create a packagets.config folder of nupkgs
         /// </summary>
-        public static async Task CreateFolderFeedPackagesConfigAsync(string root, params SimpleTestPackageContext[] contexts)
+        public static void CreateFolderFeedPackagesConfig(string root, params SimpleTestPackageContext[] contexts)
         {
             using (var tempRoot = TestDirectory.Create())
             {
                 CreatePackages(tempRoot, contexts);
 
-                await CreateFolderFeedPackagesConfigAsync(root, Directory.GetFiles(tempRoot));
+                CreateFolderFeedPackagesConfig(root, Directory.GetFiles(tempRoot));
             }
         }
 
         /// <summary>
         /// Create a packagets.config folder of nupkgs
         /// </summary>
-        public static async Task CreateFolderFeedPackagesConfigAsync(string root, params string[] nupkgPaths)
+        public static void CreateFolderFeedPackagesConfig(string root, params string[] nupkgPaths)
         {
             var resolver = new PackagePathResolver(root);
             var context = new PackageExtractionContext(NullLogger.Instance);
@@ -410,7 +410,7 @@ namespace NuGet.Test.Utility
             {
                 using (var stream = File.OpenRead(path))
                 {
-                    await PackageExtractor.ExtractPackageAsync(stream, resolver, context, CancellationToken.None);
+                    PackageExtractor.ExtractPackage(stream, resolver, context, CancellationToken.None);
                 }
             }
         }
@@ -453,7 +453,7 @@ namespace NuGet.Test.Utility
 
         private static IPackageFile CreatePackageFile(string name)
         {
-            var file = new InMemoryFile();
+            InMemoryFile file = new InMemoryFile();
             file.Path = name;
             file.Stream = new MemoryStream();
 

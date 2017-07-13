@@ -27,7 +27,6 @@ namespace NuGet.ProjectManagement
         public const string RestorePackagesPath = "RestorePackagesPath";
         public const string RestoreSources = "RestoreSources";
         public const string RestoreFallbackFolders = "RestoreFallbackFolders";
-        public const string ProjectTypeGuid = "ProjectTypeGuid";
         public const string ProjectTypeGuids = "ProjectTypeGuids";
         public const string RestoreAdditionalProjectSources = nameof(RestoreAdditionalProjectSources);
         public const string RestoreAdditionalProjectFallbackFolders = nameof(RestoreAdditionalProjectFallbackFolders);

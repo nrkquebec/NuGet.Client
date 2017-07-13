@@ -201,7 +201,6 @@ Function Install-DotnetCLI {
             DotNetExe = Join-Path $CLIRoot 'dotnet.exe'
             DotNetInstallUrl = 'https://raw.githubusercontent.com/dotnet/cli/58b0566d9ac399f5fa973315c6827a040b7aae1f/scripts/obtain/dotnet-install.ps1'
             Version = '2.0.0-preview2-006497'
-            Channel = '2.0'
         }
 
     if ([Environment]::Is64BitOperatingSystem) {
@@ -223,9 +222,9 @@ Function Install-DotnetCLI {
 
         Invoke-WebRequest $cli.DotNetInstallUrl -OutFile $DotNetInstall
 
-        Write-Host "$DotNetInstall -Channel $($cli.Channel) -InstallDir $($cli.Root) -Version $($cli.Version) -Architecture $arch"
+        Write-Host "$DotNetInstall -InstallDir $($cli.Root) -Version $($cli.Version) -Architecture $arch"
 
-        & $DotNetInstall -Channel $cli.Channel -InstallDir $cli.Root -Version $cli.Version -Architecture $arch
+        & $DotNetInstall -InstallDir $cli.Root -Version $cli.Version -Architecture $arch
     }
 
     if (-not (Test-Path $cli.DotNetExe)) {
